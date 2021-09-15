@@ -797,8 +797,11 @@ class MoneroEngine {
         })
       )
     } catch (e) {
-      this.log.error(`makeSpend error: ${e}`)
-      throw e
+      const newError = new Error(e.message)
+      this.log.error(newError)
+      throw new Error(
+        newError.message.replace('. ', '\n').replace('; n', '\nN').slice(0, -1)
+      )
     }
 
     const date = Date.now() / 1000
