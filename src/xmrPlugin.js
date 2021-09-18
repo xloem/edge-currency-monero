@@ -150,7 +150,6 @@ async function makeMoneroTools(
       const privateKey = getParameterByName('spend_key', uri)
       const publicKey = getParameterByName('view_key', uri)
       const seed = getParameterByName('mnemonic_seed', uri)
-      const block = getParamterByName('height', uri)
 
       const edgeParsedUri: EdgeParsedUri = {
         publicAddress: address
@@ -189,9 +188,6 @@ async function makeMoneroTools(
       if (publicKey) {
         edgeParsedUri.publicKeys = [publicKey]
       }
-      if (block) {
-        edgeParsedUri.block = block
-      }
 
       return edgeParsedUri
     },
@@ -211,6 +207,7 @@ async function makeMoneroTools(
       if (!obj.nativeAmount && !obj.label && !obj.message) {
         return obj.publicAddress
       } else {
+        let scheme: string = 'monero'
         let queryString: string = ''
 
         if (typeof obj.nativeAmount === 'string') {
@@ -230,10 +227,26 @@ async function makeMoneroTools(
         if (typeof obj.message === 'string') {
           queryString += 'message=' + obj.message + '&'
         }
+        if (Array.isArray(obj.privateKeys)) {
+          scheme = 'monero_wallet'
+          for (const key of obj.privateKeys) {
+            if (key.indexOf(' ') > 0) {
+              queryString += 'mnemonic_seed=' + key + '&'
+            } else {
+              queryString += 'spend_key=' + key + '&'
+            }
+          }
+        }
+        if (Array.isArray(obj.publicKeys)) {
+          scheme = 'monero_wallet'
+          for (const key of obj.publicKeys) {
+            queryString += 'view_key=' + key + '&'
+          }
+        }
         queryString = queryString.substr(0, queryString.length - 1)
 
         const serializeObj = {
-          scheme: 'monero',
+          scheme: scheme,
           path: obj.publicAddress,
           query: queryString
         }
