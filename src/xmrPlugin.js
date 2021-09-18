@@ -115,7 +115,7 @@ async function makeMoneroTools(
       } else if (typeof parsedUri.path !== 'undefined') {
         address = parsedUri.path
       } else {
-        address = getParameterByName('address', uri)
+        address = getParameterByName('address', uri) || ''
       }
       if (!address) {
         throw new Error('InvalidUriError')
@@ -132,7 +132,9 @@ async function makeMoneroTools(
         throw new Error('InvalidPublicAddressError')
       }
 
-      const amountStr = getParameterByName('amount', uri) || getParameterByName('tx_amount', uri)
+      const amountStr =
+        getParameterByName('amount', uri) ||
+        getParameterByName('tx_amount', uri)
       if (amountStr && typeof amountStr === 'string') {
         const denom = getDenomInfo('XMR')
         if (!denom) {
@@ -143,7 +145,9 @@ async function makeMoneroTools(
         currencyCode = 'XMR'
       }
       const uniqueIdentifier = getParameterByName('tx_payment_id', uri)
-      const label = getParameterByName('label', uri) || getParameterByName('recipient_name', uri)
+      const label =
+        getParameterByName('label', uri) ||
+        getParameterByName('recipient_name', uri)
       const message = getParameterByName('message', uri)
       const category = getParameterByName('category', uri)
 
@@ -204,7 +208,13 @@ async function makeMoneroTools(
       } catch (e) {
         throw new Error('InvalidPublicAddressError')
       }
-      if (!obj.nativeAmount && !obj.label && !obj.message) {
+      if (
+        !obj.nativeAmount &&
+        !obj.label &&
+        !obj.message &&
+        !obj.privateKeys &&
+        !obj.publicKeys
+      ) {
         return obj.publicAddress
       } else {
         let scheme: string = 'monero'
