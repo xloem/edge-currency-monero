@@ -467,7 +467,7 @@ class MoneroEngine {
   // Public methods
   // *************************************
 
-  async changeUserSettings(userSettings: Object): Promise<mixed> {
+  async changeUserSettings(userSettings: Object): Promise<void> {
     this.currentSettings = userSettings
   }
 
