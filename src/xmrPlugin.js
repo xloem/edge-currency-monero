@@ -105,7 +105,8 @@ async function makeMoneroTools(
 
       if (
         typeof parsedUri.scheme !== 'undefined' &&
-        parsedUri.scheme !== 'monero'
+        parsedUri.scheme !== 'monero' &&
+        parsedUri.scheme !== 'monero_wallet'
       ) {
         throw new Error('InvalidUriError') // possibly scanning wrong crypto type
       }
@@ -114,6 +115,9 @@ async function makeMoneroTools(
       } else if (typeof parsedUri.path !== 'undefined') {
         address = parsedUri.path
       } else {
+        address = getParameterByName('address', uri)
+      }
+      if (!address) {
         throw new Error('InvalidUriError')
       }
       address = address.replace('/', '') // Remove any slashes
@@ -128,7 +132,7 @@ async function makeMoneroTools(
         throw new Error('InvalidPublicAddressError')
       }
 
-      const amountStr = getParameterByName('amount', uri)
+      const amountStr = getParameterByName('amount', uri) || getParameterByName('tx_amount', uri)
       if (amountStr && typeof amountStr === 'string') {
         const denom = getDenomInfo('XMR')
         if (!denom) {
@@ -139,9 +143,14 @@ async function makeMoneroTools(
         currencyCode = 'XMR'
       }
       const uniqueIdentifier = getParameterByName('tx_payment_id', uri)
-      const label = getParameterByName('label', uri)
+      const label = getParameterByName('label', uri) || getParameterByName('recipient_name', uri)
       const message = getParameterByName('message', uri)
       const category = getParameterByName('category', uri)
+
+      const privateKey = getParameterByName('spend_key', uri)
+      const publicKey = getParameterByName('view_key', uri)
+      const seed = getParameterByName('mnemonic_seed', uri)
+      const block = getParamterByName('height', uri)
 
       const edgeParsedUri: EdgeParsedUri = {
         publicAddress: address
@@ -166,6 +175,22 @@ async function makeMoneroTools(
         if (category) {
           edgeParsedUri.metadata.category = category
         }
+      }
+
+      if (privateKey || seed) {
+        edgeParsedUri.privateKeys = []
+        if (privateKey) {
+          edgeParsedUri.privateKeys.push(privateKey)
+        }
+        if (seed) {
+          edgeParsedUri.privateKeys.push(seed)
+        }
+      }
+      if (publicKey) {
+        edgeParsedUri.publicKeys = [publicKey]
+      }
+      if (block) {
+        edgeParsedUri.block = block
       }
 
       return edgeParsedUri
