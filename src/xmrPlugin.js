@@ -256,12 +256,12 @@ async function makeMoneroTools(
       }
       queryString = queryString.substr(0, queryString.length - 1)
 
+      // uri-js strips _'s from schemes, so the scheme is added manually
       const serializeObj = {
-        scheme: scheme,
         path: obj.publicAddress,
         query: queryString
       }
-      const url = serialize(serializeObj)
+      const url = scheme + ':' + serialize(serializeObj)
       return url
     }
   }
