@@ -117,19 +117,18 @@ async function makeMoneroTools(
       } else {
         address = getParameterByName('address', uri) || ''
       }
-      if (!address) {
-        throw new Error('InvalidUriError')
-      }
-      address = address.replace('/', '') // Remove any slashes
+      if (address) {
+        address = address.replace('/', '') // Remove any slashes
 
-      try {
-        // verify address is decodable for currency
-        const result = await myMoneroApi.decodeAddress(address)
-        if (result.err_msg === 'Invalid address') {
-          throw new Error('InvalidUriError')
+        try {
+          // verify address is decodable for currency
+          const result = await myMoneroApi.decodeAddress(address)
+          if (result.err_msg === 'Invalid address') {
+            throw new Error('InvalidUriError')
+          }
+        } catch (e) {
+          throw new Error('InvalidPublicAddressError')
         }
-      } catch (e) {
-        throw new Error('InvalidPublicAddressError')
       }
 
       const amountStr =
@@ -155,8 +154,13 @@ async function makeMoneroTools(
       const publicKey = getParameterByName('view_key', uri)
       const seed = getParameterByName('mnemonic_seed', uri)
 
-      const edgeParsedUri: EdgeParsedUri = {
-        publicAddress: address
+      if (!address && !privateKey && !seed && !publicKey) {
+        throw new Error('InvalidUriError')
+      }
+
+      const edgeParsedUri: EdgeParsedUri = {}
+      if (address) {
+        edgeParsedUri.publicAddress = address
       }
       if (nativeAmount) {
         edgeParsedUri.nativeAmount = nativeAmount
