@@ -197,72 +197,72 @@ async function makeMoneroTools(
     },
 
     encodeUri: async (obj: EdgeEncodeUri): Promise<string> => {
-      if (!obj.publicAddress) {
+      if (obj.publicAddress) {
+        try {
+          const result = await myMoneroApi.decodeAddress(obj.publicAddress)
+          if (result.err_msg === 'Invalid address') {
+            throw new Error('InvalidUriError')
+          }
+        } catch (e) {
+          throw new Error('InvalidPublicAddressError')
+        }
+        if (
+          !obj.nativeAmount &&
+          !obj.label &&
+          !obj.message &&
+          !obj.privateKeys &&
+          !obj.publicKeys
+        ) {
+          return obj.publicAddress
+        }
+      } else if (!obj.privateKeys && !obj.publicKeys) {
         throw new Error('InvalidPublicAddressError')
       }
-      try {
-        const result = await myMoneroApi.decodeAddress(obj.publicAddress)
-        if (result.err_msg === 'Invalid address') {
-          throw new Error('InvalidUriError')
+
+      const scheme: string =
+        obj.privateKeys || obj.publicKeys ? 'monero_wallet' : 'monero'
+      let queryString: string = ''
+
+      if (typeof obj.nativeAmount === 'string') {
+        const currencyCode: string = 'XMR'
+        const nativeAmount: string = obj.nativeAmount
+        const denom = getDenomInfo(currencyCode)
+        if (!denom) {
+          throw new Error('InternalErrorInvalidCurrencyCode')
         }
-      } catch (e) {
-        throw new Error('InvalidPublicAddressError')
+        const amount = bns.div(nativeAmount, denom.multiplier, 12)
+
+        queryString += 'amount=' + amount + '&'
       }
-      if (
-        !obj.nativeAmount &&
-        !obj.label &&
-        !obj.message &&
-        !obj.privateKeys &&
-        !obj.publicKeys
-      ) {
-        return obj.publicAddress
-      } else {
-        let scheme: string = 'monero'
-        let queryString: string = ''
-
-        if (typeof obj.nativeAmount === 'string') {
-          const currencyCode: string = 'XMR'
-          const nativeAmount: string = obj.nativeAmount
-          const denom = getDenomInfo(currencyCode)
-          if (!denom) {
-            throw new Error('InternalErrorInvalidCurrencyCode')
-          }
-          const amount = bns.div(nativeAmount, denom.multiplier, 12)
-
-          queryString += 'amount=' + amount + '&'
-        }
-        if (typeof obj.label === 'string') {
-          queryString += 'label=' + obj.label + '&'
-        }
-        if (typeof obj.message === 'string') {
-          queryString += 'message=' + obj.message + '&'
-        }
-        if (Array.isArray(obj.privateKeys)) {
-          scheme = 'monero_wallet'
-          for (const key of obj.privateKeys) {
-            if (key.indexOf(' ') > 0) {
-              queryString += 'mnemonic_seed=' + key + '&'
-            } else {
-              queryString += 'spend_key=' + key + '&'
-            }
-          }
-        }
-        if (Array.isArray(obj.publicKeys)) {
-          scheme = 'monero_wallet'
-          for (const key of obj.publicKeys) {
-            queryString += 'view_key=' + key + '&'
-          }
-        }
-        queryString = queryString.substr(0, queryString.length - 1)
-
-        const serializeObj = {
-          scheme: scheme,
-          path: obj.publicAddress,
-          query: queryString
-        }
-        const url = serialize(serializeObj)
-        return url
+      if (typeof obj.label === 'string') {
+        queryString += 'label=' + obj.label + '&'
       }
+      if (typeof obj.message === 'string') {
+        queryString += 'message=' + obj.message + '&'
+      }
+      if (Array.isArray(obj.privateKeys)) {
+        for (const key of obj.privateKeys) {
+          if (key.indexOf(' ') > 0) {
+            queryString += 'mnemonic_seed=' + key + '&'
+          } else {
+            queryString += 'spend_key=' + key + '&'
+          }
+        }
+      }
+      if (Array.isArray(obj.publicKeys)) {
+        for (const key of obj.publicKeys) {
+          queryString += 'view_key=' + key + '&'
+        }
+      }
+      queryString = queryString.substr(0, queryString.length - 1)
+
+      const serializeObj = {
+        scheme: scheme,
+        path: obj.publicAddress,
+        query: queryString
+      }
+      const url = serialize(serializeObj)
+      return url
     }
   }
 
